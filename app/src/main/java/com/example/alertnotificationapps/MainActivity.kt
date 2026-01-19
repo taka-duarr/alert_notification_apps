@@ -28,7 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.BorderStroke
 
-//ssss
+//ssssSSS
 
 
 class MainActivity : ComponentActivity() {
