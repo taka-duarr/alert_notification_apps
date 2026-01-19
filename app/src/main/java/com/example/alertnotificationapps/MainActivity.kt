@@ -27,6 +27,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.res.painterResource
 
 //ssssSSS
 
@@ -130,41 +137,123 @@ class MainActivity : ComponentActivity() {
 
     }
 }
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppUI(sensors: Map<String, SensorData>) {
     MaterialTheme {
+        val alertCount = sensors.values.count { it.status == "BAHAYA" }
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            "IoT Alert System",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.SemiBold
-                            )
+            containerColor = Color.Transparent,
+            topBar = {} // kosongkan
+        ) { padding ->
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF1e1f22))
+                    .padding(padding)
+            ) {
+
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    MonitoringHeader(
+                        buildingName = "Gedung A Monitoring",
+                        floors = "${sensors.size} Floors Active",
+                        alertCount = alertCount
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (sensors.isEmpty()) {
+                        EmptyState(Modifier.fillMaxSize())
+                    } else {
+                        SensorList(
+                            sensors = sensors,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
+                }
+            }
+        }
+    }
+}
+@Composable
+fun MonitoringHeader(
+    buildingName: String,
+    floors: String,
+    alertCount: Int
+) {
+
+    // Warna badge mengikuti jumlah alert
+    val badgeColor = if (alertCount > 0) Color(0xFF8B1E1E) else Color(0xFF2E2E2E)
+    val textColor = if (alertCount > 0) Color.White else Color.LightGray
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1E1E)
+        ),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            // Ikon Gedung
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color(0xFF2C2F48), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "🏢",
+                    fontSize = MaterialTheme.typography.headlineMedium.fontSize
                 )
             }
-        ) { padding ->
-            if (sensors.isEmpty()) {
-                EmptyState(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Nama Gedung & Informasi lantai
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    buildingName,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
                 )
-            } else {
-                SensorList(
-                    sensors = sensors,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
+                Text(
+                    floors,
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            // Badge Alert dinamis
+            Box(
+                modifier = Modifier
+                    .background(badgeColor, RoundedCornerShape(30))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "$alertCount Alerts",
+                    color = textColor,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
         }
     }
 }
+
 
 @Composable
 fun EmptyState(modifier: Modifier = Modifier) {
@@ -224,112 +313,187 @@ fun SensorList(
 
 @Composable
 fun SensorCard(sensor: SensorData) {
-    val (color, icon, label) = when (sensor.status) {
-        "BAHAYA" -> Triple(
-            MaterialTheme.colorScheme.error,
-            "🚨",
-            "BAHAYA"
-        )
-        "PERINGATAN" -> Triple(
-            MaterialTheme.colorScheme.tertiary,
-            "⚠️",
-            "PERINGATAN"
-        )
-        else -> Triple(
-            MaterialTheme.colorScheme.primary,
-            "✅",
-            "AMAN"
-        )
+
+    var expanded by remember { mutableStateOf(false) }
+
+    val statusColor = when (sensor.status) {
+        "BAHAYA" -> Color(0xFFFF4C4C)
+        "PERINGATAN" -> Color(0xFFFFB74D)
+        else -> Color(0xFF66DD77)
     }
+
+    val surfaceDark = Color(0xFF1A1A1A)
+    val cardDark = Color(0xFF222224)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,  // Lebih halus
-            pressedElevation = 8.dp
-        ),
-        shape = MaterialTheme.shapes.medium,
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-        )
+        colors = CardDefaults.cardColors(containerColor = cardDark),
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            // Accent bar dengan corner radius
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .height(56.dp)
-                    .background(
-                        color = color,
-                        shape = RoundedCornerShape(3.dp)
-                    )
-            )
 
-            Spacer(modifier = Modifier.width(16.dp))
+            // HEADER
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-            Column(modifier = Modifier.weight(1f)) {
+                // Indicator bulat merah/hijau/kuning
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .background(statusColor, shape = RoundedCornerShape(50))
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
                 Text(
                     text = sensor.deviceId,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    modifier = Modifier.weight(1f)
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Icon(
+                    painter = painterResource(id = R.drawable.corporate_fare_24),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = icon,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-
-                    Text(
-                        text = label,
-                        color = color,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                }
             }
 
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "${"%.1f".format(sensor.temperature)}°C",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = when (sensor.status) {
-                        "BAHAYA" -> MaterialTheme.colorScheme.error
-                        "PERINGATAN" -> MaterialTheme.colorScheme.tertiary
-                        else -> MaterialTheme.colorScheme.primary
-                    }
-                )
+            Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    "Temperature",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            // Summary data
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                SummaryItem("Temp", "${"%.1f".format(sensor.temperature)}°C", Color(0xFF4A90E2))
+                SummaryItem("Smoke", "50%", Color(0xFFC8C8C8))
+                SummaryItem("Alerts", if (sensor.status == "BAHAYA") "1" else "0", Color(0xFFFF6B6B))
+            }
+
+            // EXPANDED DETAIL
+            androidx.compose.animation.AnimatedVisibility(visible = expanded) {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .background(surfaceDark, RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                ) {
+
+                    Text(
+                        "Detail Ruangan",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        ),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    // GRID 2x2 RUANGAN
+                    DetailGrid()
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // LEGEND
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        LegendItem(Color(0xFF66DD77), "Normal")
+                        LegendItem(Color(0xFFFFB74D), "Warning")
+                        LegendItem(Color(0xFFFF4C4C), "Fire Alert")
+                    }
+                }
             }
         }
     }
 }
+@Composable
+fun SummaryItem(title: String, value: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = title,
+            color = Color.Gray,
+            style = MaterialTheme.typography.bodySmall
+        )
+        Text(
+            text = value,
+            color = color,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+        )
+    }
+}
+@Composable
+fun DetailGrid() {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            RoomCard("A - 201", Color(0xFFFF4C4C))
+            RoomCard("A - 202", Color(0xFF66DD77))
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            RoomCard("A - 203", Color(0xFFFFB74D))
+            RoomCard("A - 204", Color(0xFF66DD77))
+        }
+    }
+}
+@Composable
+fun RoomCard(room: String, statusColor: Color) {
+    Column(
+        modifier = Modifier
+            .background(Color(0xFF121212), RoundedCornerShape(14.dp))
+            .border(
+                BorderStroke(1.dp, statusColor.copy(alpha = 0.8f)),
+                RoundedCornerShape(14.dp)
+            )
+            .padding(12.dp)
+    ) {
+        Text(
+            room,
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Bold
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text("Temp : 23°C", color = Color.White)
+        Text("Smoke : 45%", color = Color.White)
+    }
+}
+
+@Composable
+fun LegendItem(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .background(color, shape = RoundedCornerShape(50))
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(label, color = Color.White)
+    }
+}
+
 
 
